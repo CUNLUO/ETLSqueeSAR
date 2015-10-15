@@ -1,4 +1,4 @@
--- Function: squeesar.agrupar_squeesar()
+﻿-- Function: squeesar.agrupar_squeesar()
 
 -- DROP FUNCTION squeesar.agrupar_squeesar();
 
@@ -11,7 +11,16 @@ DECLARE
 	/*--------------------------------- */
 	cur_fecha		RECORD;
 	cur_valores		RECORD;
-
+	
+	nIdPoligonoAnterior$		bigint;
+	dFechaAnterior$	date;
+	fDeformacionAnterior$	double precision;
+	fAceleracion$	double precision;
+	fAceleracionAnterior$	double precision;
+	fVelocidad$	double precision;
+	fVelocidadAnterior$	double precision;
+	
+	nDiferenciaDias$	integer;
 	
 BEGIN
 
@@ -22,6 +31,7 @@ BEGIN
 	DELETE FROM
 		squeesar.squeesar_poligono_resumen;
 	
+	nIdPoligonoAnterior$ := 0;
 	
 	FOR cur_fecha IN
 
@@ -29,7 +39,7 @@ BEGIN
 			poligono_squeesar.id_poligono,
 			squeesar_consolidado_fecha.fecha,
 			count(*) as cantidad,
-			AVG(deformacion) AS prom_valor_fecha
+			AVG(deformacion) AS prom_deformacion
 		FROM 
 			squeesar.squeesar_consolidado_fecha
 			INNER JOIN poligonos.poligono_squeesar ON
@@ -37,24 +47,59 @@ BEGIN
 		GROUP BY 
 			poligono_squeesar.id_poligono,
 			squeesar_consolidado_fecha.fecha
+		ORDER BY 
+			poligono_squeesar.id_poligono,
+			squeesar_consolidado_fecha.fecha	
+			
 	LOOP
 		
+		IF nIdPoligonoAnterior$  = cur_fecha.id_poligono THEN
+			nDiferenciaDias$ := cur_fecha.fecha - dFechaAnterior$;
+			IF nDiferenciaDias$ > 0 THEN
+				fVelocidad$ := (cur_fecha.prom_deformacion - fDeformacionAnterior$) / nDiferenciaDias$;
+				IF fVelocidadAnterior$ IS NOT NULL THEN
+					fAceleracion$ := (fVelocidad$ - fVelocidadAnterior$) / nDiferenciaDias$;
+				ELSE
+					fAceleracion$ := NULL;
+				END IF;
+			ELSE
+				fVelocidad$ := 0;
+				IF fVelocidadAnterior$ <> NULL THEN
+					fAceleracion$ := 0;
+				ELSE
+					fAceleracion$ := NULL;
+				END IF;	
+			END IF;
+		ELSE
+			fVelocidad$ := NULL;
+			fAceleracion$ := NULL;
+		END IF;
 		INSERT INTO
 			squeesar.squeesar_poligono_fecha
 			(
 				id_poligono,
 				fecha,
 				cant_registros,
-				deformacion
+				deformacion,
+				velocidad,
+				aceleracion
 			)
 			VALUES
 			(
 				cur_fecha.id_poligono,
 				cur_fecha.fecha,
 				cur_fecha.cantidad,
-				cur_fecha.prom_valor_fecha
+				cur_fecha.prom_deformacion,
+				fVelocidad$,
+				fAceleracion$
 			);
 			
+			dFechaAnterior$ := cur_fecha.fecha;
+			nIdPoligonoAnterior$:= cur_fecha.id_poligono;
+			fDeformacionAnterior$:= cur_fecha.prom_deformacion;
+			fAceleracionAnterior$:= fAceleracion$;
+			fVelocidadAnterior$:= fVelocidad$;
+	
 	END LOOP;
 	
 	FOR cur_valores IN

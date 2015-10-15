@@ -4,6 +4,8 @@
   fecha	date,
   cant_registros bigint,
   deformacion double precision,
+  velocidad double precision,
+  aceleracion  double precision,
   CONSTRAINT squeesar_poligono_fecha_pkey PRIMARY KEY (id_poligono,fecha)
 )
 WITH (
