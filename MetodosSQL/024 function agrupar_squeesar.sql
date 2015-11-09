@@ -9,9 +9,13 @@ $BODY$
 DECLARE
 
 	/*--------------------------------- */
+	sQuery_Fecha$							VARCHAR(2000);
+	sQuery_Resumen$			varchar(2000);
+	sNombreTabla$	varchar(255);
 	cur_fecha		RECORD;
 	cur_valores		RECORD;
 	
+	sDireccionAnterior$		varchar(20);
 	nIdPoligonoAnterior$		bigint;
 	dFechaAnterior$	date;
 	fDeformacionAnterior$	double precision;
@@ -23,61 +27,68 @@ DECLARE
 	nDiferenciaDias$	integer;
 	
 BEGIN
-
+	sQuery_Fecha$ := '';
+	sNombreTabla$ := '';
+	
+	SELECT DISTINCT
+		nombre_tabla_consolidada
+	INTO
+		sNombreTabla$
+	FROM
+		squeesar.registro_squeesar
+	WHERE
+		vigencia  = 'S';
 		
-	DELETE FROM
-		squeesar.squeesar_poligono_fecha;	
+	TRUNCATE squeesar.poligono_fecha;	
 		
-	DELETE FROM
-		squeesar.squeesar_poligono_resumen;
+	TRUNCATE squeesar.poligono_resumen;
 	
 	nIdPoligonoAnterior$ := 0;
-	
-	FOR cur_fecha IN
-
-		SELECT 
+	sQuery_Fecha$ := 'SELECT 
 			poligono_squeesar.id_poligono,
-			squeesar_consolidado_fecha.fecha,
+			' || sNombreTabla$ || '_fecha.fecha,
+			' || sNombreTabla$ || '_fecha.direccion,
 			count(*) as cantidad,
 			AVG(deformacion) AS prom_deformacion
 		FROM 
-			squeesar.squeesar_consolidado_fecha
+			squeesar.' || sNombreTabla$ || '_fecha
 			INNER JOIN poligonos.poligono_squeesar ON
-				poligono_squeesar.id_squeesar_consolidado = squeesar_consolidado_fecha.id_squeesar_consolidado
+				poligono_squeesar.id_squeesar_consolidado = ' || sNombreTabla$ || '_fecha.id_squeesar_consolidado
 		GROUP BY 
 			poligono_squeesar.id_poligono,
-			squeesar_consolidado_fecha.fecha
+			' || sNombreTabla$ || '_fecha.direccion,
+			' || sNombreTabla$ || '_fecha.fecha
 		ORDER BY 
 			poligono_squeesar.id_poligono,
-			squeesar_consolidado_fecha.fecha	
+			' || sNombreTabla$ || '_fecha.direccion,
+			' || sNombreTabla$ || '_fecha.fecha';
 			
+	FOR cur_fecha IN
+		EXECUTE sQuery_Fecha$	
 	LOOP
 		
-		IF nIdPoligonoAnterior$  = cur_fecha.id_poligono THEN
+		IF (nIdPoligonoAnterior$  = cur_fecha.id_poligono) and  (sDireccionAnterior$ = cur_fecha.direccion) THEN
 			nDiferenciaDias$ := cur_fecha.fecha - dFechaAnterior$;
 			IF nDiferenciaDias$ > 0 THEN
 				fVelocidad$ := (cur_fecha.prom_deformacion - fDeformacionAnterior$) / nDiferenciaDias$;
-				IF fVelocidadAnterior$ IS NOT NULL THEN
+				IF fVelocidadAnterior$ <> 0 THEN
 					fAceleracion$ := (fVelocidad$ - fVelocidadAnterior$) / nDiferenciaDias$;
 				ELSE
-					fAceleracion$ := NULL;
+					fAceleracion$ := 0;
 				END IF;
 			ELSE
 				fVelocidad$ := 0;
-				IF fVelocidadAnterior$ <> NULL THEN
-					fAceleracion$ := 0;
-				ELSE
-					fAceleracion$ := NULL;
-				END IF;	
+				fAceleracion$ := 0;
 			END IF;
 		ELSE
-			fVelocidad$ := NULL;
-			fAceleracion$ := NULL;
+			fVelocidad$ := 0;
+			fAceleracion$ := 0;
 		END IF;
 		INSERT INTO
-			squeesar.squeesar_poligono_fecha
+			squeesar.poligono_fecha
 			(
 				id_poligono,
+				direccion,
 				fecha,
 				cant_registros,
 				deformacion,
@@ -87,6 +98,7 @@ BEGIN
 			VALUES
 			(
 				cur_fecha.id_poligono,
+				cur_fecha.direccion,
 				cur_fecha.fecha,
 				cur_fecha.cantidad,
 				cur_fecha.prom_deformacion,
@@ -96,16 +108,16 @@ BEGIN
 			
 			dFechaAnterior$ := cur_fecha.fecha;
 			nIdPoligonoAnterior$:= cur_fecha.id_poligono;
+			sDireccionAnterior$ := cur_fecha.direccion;
 			fDeformacionAnterior$:= cur_fecha.prom_deformacion;
 			fAceleracionAnterior$:= fAceleracion$;
 			fVelocidadAnterior$:= fVelocidad$;
 	
 	END LOOP;
-	
-	FOR cur_valores IN
 
-		SELECT 
+	sQuery_Resumen$ := '	SELECT 
 			id_poligono,
+			direccion,
 			count(*) as cantidad,
 			AVG(height) as prom_height,
 			AVG(h_stdev) as prom_h_stdev,
@@ -118,18 +130,22 @@ BEGIN
 			AVG(range) as prom_range,
 			AVG(azimuth) as prom_azimuth
 		FROM 
-			squeesar.squeesar_consolidado
+			squeesar.' || sNombreTabla$ || '
 			INNER JOIN poligonos.poligono_squeesar ON
-				poligono_squeesar.id_squeesar_consolidado = squeesar_consolidado.id_squeesar_consolidado
+				poligono_squeesar.id_squeesar_consolidado = squeesar.' || sNombreTabla$ || '.id_squeesar_consolidado
 		GROUP BY 
-			id_poligono
+			id_poligono,
+			direccion';
+			
+	FOR cur_valores IN
+		EXECUTE sQuery_Resumen$	
 	LOOP
 
-
 		INSERT INTO
-			squeesar.squeesar_poligono_resumen
+			squeesar.poligono_resumen
 			(
 				id_poligono ,
+				direccion,
 				cant_registros,
 				height,
 				h_stdev,
@@ -145,6 +161,7 @@ BEGIN
 			VALUES
 			(
 				cur_valores.id_poligono ,
+				cur_valores.direccion ,
 				cur_valores.cantidad ,
 				cur_valores.prom_height,
 				cur_valores.prom_h_stdev,
