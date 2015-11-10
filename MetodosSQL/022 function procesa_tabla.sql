@@ -91,7 +91,7 @@ Raise notice 'sDireccion$ %',sDireccion$;
 						EXECUTE sQueryFinal$;
 						sIndicadorInsercion$ := 'S';
 					END IF;
-					sQueryFinal$ := 'INSERT INTO ' || sNombreEsquema$ || '.'|| sNombreNuevaTablaFecha$ ||' (id_squeesar_consolidado, gid , direccion, fecha,deformacion) Select id_squeesar_consolidado, gid , ''' || sDireccion$ || ''', ''' || dFecha$ || ''' , ' || sNombreColumna$ || ' from ' || sNombreEsquema$ || '.' || sNombreTabla$;
+					sQueryFinal$ := 'INSERT INTO ' || sNombreEsquema$ || '.'|| sNombreNuevaTablaFecha$ ||' (id_squeesar_consolidado , direccion, fecha,deformacion) Select id_squeesar_consolidado , ''' || sDireccion$ || ''', ''' || dFecha$ || ''' , ' || sNombreColumna$ || ' from ' || sNombreEsquema$ || '.' || sNombreTabla$;
 					--Raise notice 'Query detalle fecha %',sQueryFinal$;
 					EXECUTE sQueryFinal$;
 				end if;

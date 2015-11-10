@@ -36,3 +36,21 @@ CREATE INDEX template_squeesar_consolidado_geom_gist
   ON squeesar.template_squeesar_consolidado
   USING gist
   (geom);
+  
+-- Index: squeesar.template_squeesar_consolidado_x_idx
+
+-- DROP INDEX squeesar.template_squeesar_consolidado_x_idx;
+
+CREATE INDEX template_squeesar_consolidado_x_idx
+  ON squeesar.template_squeesar_consolidado
+  USING btree
+  (x);
+  
+-- Index: squeesar.template_squeesar_consolidado_y_idx
+
+-- DROP INDEX squeesar.template_squeesar_consolidado_y_idx;
+
+CREATE INDEX template_squeesar_consolidado_y_idx
+  ON squeesar.template_squeesar_consolidado
+  USING btree
+  (y);  

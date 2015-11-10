@@ -102,8 +102,7 @@ BEGIN
 		nNumError$ := squeesar.procesar_tabla(sNombreTabla$,sNombreNuevaTabla$, sNombreNuevaTablaFecha$,sDireccion$);
 					
 		nNumSqueesarAnterior$ := nNumSqueesar$;
-		
-		commit;
+	
 		
 	END LOOP;
 	
