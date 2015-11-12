@@ -1,0 +1,1 @@
+select fn_refresh_mv_cortes_squeesar_fecha();
