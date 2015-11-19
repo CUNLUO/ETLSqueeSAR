@@ -1,0 +1,40 @@
+-- Crear o reemplazar funcion 'fn_refresh_mv_cortes_squeesar_fecha'
+CREATE
+OR REPLACE FUNCTION fn_refresh_mv_cortes_squeesar_fecha () RETURNS VOID AS $$ 
+
+-- Declarar variables
+DECLARE
+	tabla RECORD ;
+	tiempo_ini TIMESTAMP ;
+
+BEGIN
+-- Obtener ultimo (mas actual)  registro de la tabla 'registro_refresh_matview'
+	FOR tabla IN SELECT
+		t1.id_registro_refresh_matview,
+		t1.fechahora_modificacion,
+		t1.requiere_refresh
+	FROM
+		"cortes_transversales"."registro_refresh_matview" t1
+	ORDER BY
+		t1.fechahora_modificacion DESC
+	LIMIT 1 
+
+-- Se inicia LOOP sobre "tabla" (que posee un registro
+LOOP
+-- Si el ultimo registro requiere actualizar entonces se actualiza la vista materializada
+	IF (tabla.requiere_refresh = 't') THEN
+		tiempo_ini = clock_timestamp() ;
+		REFRESH MATERIALIZED VIEW cortes_transversales.mv_cortes_squeesar_fecha ;
+		UPDATE 
+			"cortes_transversales"."registro_refresh_matview"
+		SET requiere_refresh = 'f',
+			fechahora_proceso = tiempo_ini,
+			tiempo_ejecucion = clock_timestamp() - tiempo_ini
+		WHERE
+			id_registro_refresh_matview = tabla.id_registro_refresh_matview ;
+	END IF ;
+END LOOP ;
+
+END ; 
+
+$$ LANGUAGE plpgsql

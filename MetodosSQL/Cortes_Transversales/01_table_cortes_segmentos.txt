@@ -1,0 +1,35 @@
+-- Eliminar tabla y todas las dependencias
+DROP TABLE
+IF EXISTS cortes_transversales.cortes_segmentos CASCADE;
+
+-- Eliminar la secuencia para iniciar desde 0
+DROP SEQUENCE
+IF EXISTS cortes_transversales.id_segmentos_seq;
+
+-- Crear la secuencia del id de la tabla
+CREATE SEQUENCE cortes_transversales.id_segmentos_seq;
+
+-- Cear tabla para ir almacenando los cortes transversales
+CREATE TABLE cortes_transversales.cortes_segmentos (
+	"id_cortes_segmentos" int8 DEFAULT nextval(
+		'cortes_transversales.id_segmentos_seq' :: regclass
+	) NOT NULL,
+	"x_0" float8 NOT NULL,
+	"y_0" float8 NOT NULL,
+	"x_1" float8 NOT NULL,
+	"y_1" float8 NOT NULL,
+	"x_2" float8 NOT NULL,
+	"y_2" float8 NOT NULL,
+	"x_3" float8 NOT NULL,
+	"y_3" float8 NOT NULL,
+	"x_4" float8 NOT NULL,
+	"y_4" float8 NOT NULL,
+	"lx_0" float8 NOT NULL,
+	"ly_0" float8 NOT NULL,
+	"lx_1" float8 NOT NULL,
+	"ly_1" float8 NOT NULL,
+	"id_corte" float8,
+	PRIMARY KEY ("id_cortes_segmentos")
+) WITH (OIDS = FALSE);
+
+ALTER TABLE cortes_transversales.cortes_segmentos OWNER TO "postgres";

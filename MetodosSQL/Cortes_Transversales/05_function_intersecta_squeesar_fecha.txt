@@ -1,0 +1,90 @@
+-- Elimina funcion 'fn_intersecta_squeesar_fecha'
+DROP FUNCTION
+IF EXISTS fn_intersecta_squeesar_fecha (
+	x_0 FLOAT,
+	y_0 FLOAT,
+	x_1 FLOAT,
+	y_1 FLOAT,
+	x_2 FLOAT,
+	y_2 FLOAT,
+	x_3 FLOAT,
+	y_3 FLOAT,
+	x_4 FLOAT,
+	y_4 FLOAT
+) CASCADE;
+
+-- Crea funcion 'fn_intersecta_squeesar_fecha'
+CREATE FUNCTION fn_intersecta_squeesar_fecha (
+	x_0 FLOAT,
+	y_0 FLOAT,
+	x_1 FLOAT,
+	y_1 FLOAT,
+	x_2 FLOAT,
+	y_2 FLOAT,
+	x_3 FLOAT,
+	y_3 FLOAT,
+	x_4 FLOAT,
+	y_4 FLOAT
+) RETURNS TABLE (
+	new_geom geometry,
+	def_mean FLOAT,
+	n BIGINT,
+	fecha DATE
+) AS $$
+
+-- Declarar variables
+DECLARE
+	sQuery_GeomSegmento$	 varchar(4000);
+	sQuery_Total$ varchar(4000);
+	sNombre_Tabla$	varchar(255);
+
+
+BEGIN
+-- Inicializar variables
+	sQuery_GeomSegmento$ := '';
+	sQuery_Total$ := '';
+	sNombre_Tabla$ := '';
+
+-- Determinar squeesar vigente
+	SELECT DISTINCT
+			nombre_tabla_consolidada
+		INTO
+			sNombre_Tabla$
+		FROM
+			squeesar.registro_squeesar
+		WHERE
+			vigencia  = 'S';
+
+-- Parte de la query con la geometria a intersectar			
+	sQuery_GeomSegmento$ := 'ST_Transform (
+		ST_GeomFromText (
+			''POLYGON((' || $1 || ' ' || $2 || ' ,' || $3 || ' ' || $4 || ',' || $5 || ' ' || $6 || ',' || $7 || ' ' || $8 || ',' || $9 || ' ' || $10 || '))'',	4326), 1000)';
+
+-- Query completa
+	sQuery_Total$ := 'SELECT ' 
+											|| sQuery_GeomSegmento$ || ' AS geom_segmento,
+											AVG (t2.deformacion) AS def_mean,
+											COUNT (t1.geom) AS n,
+											t2.fecha
+										FROM
+											"squeesar".' || sNombre_Tabla$ || ' AS t1
+										INNER JOIN squeesar.' || sNombre_Tabla$ || '_fecha AS t2 ON (
+											t1.id_squeesar_consolidado = t2.id_squeesar_consolidado
+										)
+										WHERE
+											ST_Intersects (	t1.geom, ' || sQuery_GeomSegmento$ || ')
+										AND ST_isvalid (t1.geom) = ''t''
+										AND ST_isvalid ( ' || sQuery_GeomSegmento$ || '	) = ''t''
+										AND t1.x >= st_xmin ( ' || sQuery_GeomSegmento$ || ')
+										AND t1.x <= st_xmax ( ' || sQuery_GeomSegmento$ || ')
+										AND t1.y >= st_ymin ( ' || sQuery_GeomSegmento$ || ')
+										AND t1.y <= st_ymax ( ' || sQuery_GeomSegmento$ || ')
+										GROUP BY
+											' || sQuery_GeomSegmento$ || ',
+											t2.fecha;';
+
+-- Ejecutar query											
+	RETURN QUERY EXECUTE sQuery_Total$;
+END;
+
+ $$ LANGUAGE plpgsql;

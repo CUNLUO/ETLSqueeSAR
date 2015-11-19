@@ -1,0 +1,124 @@
+-- Eliminar vista 'v_cortes_segmentos'
+DROP VIEW
+IF EXISTS "cortes_transversales"."v_cortes_segmentos" CASCADE;
+
+-- Crear vista 'v_cortes_segmentos'
+CREATE
+OR REPLACE VIEW "cortes_transversales"."v_cortes_segmentos" AS (
+	SELECT
+		t1.id_cortes_segmentos AS id_cortes_segmentos,
+		t1.id_corte,
+-- Calcula el geom asociado al poligono que encierra al segmento correspondiente
+		st_setsrid (
+			st_makepolygon (
+				st_geomfromtext (
+					(
+						(
+							(
+								(
+									(
+										(
+											(
+												(
+													(
+														(
+															(
+																(
+																	(
+																		(
+																			(
+																				(
+																					(
+																						(
+																							(
+																								(
+																									'LINESTRING(' :: TEXT || t1.x_0
+																								) || ' ' :: TEXT
+																							) || t1.y_0
+																						) || ',' :: TEXT
+																					) || t1.x_1
+																				) || ' ' :: TEXT
+																			) || t1.y_1
+																		) || ',' :: TEXT
+																	) || t1.x_2
+																) || ' ' :: TEXT
+															) || t1.y_2
+														) || ', ' :: TEXT
+													) || t1.x_3
+												) || ' ' :: TEXT
+											) || t1.y_3
+										) || ', ' :: TEXT
+									) || t1.x_4
+								) || ' ' :: TEXT
+							) || t1.y_4
+						) || ')' :: TEXT
+					),
+					4326
+				)
+			),
+			4326
+		) AS geom_segmento,
+-- Calcula el geom del centroide del poligono asociado al segmento
+		st_setsrid (
+			st_centroid (
+				st_geomfromtext (
+					(
+						(
+							(
+								(
+									(
+										(
+											(
+												(
+													(
+														(
+															(
+																(
+																	(
+																		(
+																			(
+																				(
+																					(
+																						(
+																							(
+																								(
+																									'LINESTRING(' :: TEXT || t1.x_0
+																								) || ' ' :: TEXT
+																							) || t1.y_0
+																						) || ',' :: TEXT
+																					) || t1.x_1
+																				) || ' ' :: TEXT
+																			) || t1.y_1
+																		) || ',' :: TEXT
+																	) || t1.x_2
+																) || ' ' :: TEXT
+															) || t1.y_2
+														) || ', ' :: TEXT
+													) || t1.x_3
+												) || ' ' :: TEXT
+											) || t1.y_3
+										) || ', ' :: TEXT
+									) || t1.x_4
+								) || ' ' :: TEXT
+							) || t1.y_4
+						) || ')' :: TEXT
+					),
+					4326
+				)
+			),
+			4326
+		) AS geom_centroide,
+-- Calcula el geom de la linea asociada a todo el corte
+		st_setsrid (
+			st_geomfromtext ('LINESTRING(' || t1.lx_0 || ' ' || t1.ly_0|| ',' || t1.lx_1 || ' ' || t1.ly_1 || ')',4326),
+			4326
+		) AS geom_linea,
+-- Calcula el geom del poligono asociado al segmento pero como polylinea, no como poligono
+		st_setsrid (
+			st_geomfromtext ('LINESTRING(' || t1.x_0 || ' ' || t1.y_0|| ',' || t1.x_1 || ' ' || t1.y_1 || ',' || t1.x_2 || ' ' || t1.y_2 || ',' || t1.x_3 || ' ' || t1.y_3 || ',' || t1.x_4 || ' ' || t1.y_4 || ')',4326),
+			4326
+		) AS geom_segmento_polyline
+
+	FROM
+		cortes_transversales.cortes_segmentos t1
+);
