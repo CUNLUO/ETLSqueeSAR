@@ -117,8 +117,9 @@ OR REPLACE VIEW "cortes_transversales"."v_cortes_segmentos" AS (
 		st_setsrid (
 			st_geomfromtext ('LINESTRING(' || t1.x_0 || ' ' || t1.y_0|| ',' || t1.x_1 || ' ' || t1.y_1 || ',' || t1.x_2 || ' ' || t1.y_2 || ',' || t1.x_3 || ' ' || t1.y_3 || ',' || t1.x_4 || ' ' || t1.y_4 || ')',4326),
 			4326
-		) AS geom_segmento_polyline
-
+		) AS geom_segmento_polyline,
+		t1.nro_cortes,
+		t1.ancho_corte
 	FROM
 		cortes_transversales.cortes_segmentos t1
 );

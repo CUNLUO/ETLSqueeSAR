@@ -29,6 +29,8 @@ CREATE TABLE cortes_transversales.cortes_segmentos (
 	"lx_1" float8 NOT NULL,
 	"ly_1" float8 NOT NULL,
 	"id_corte" float8,
+	"nro_cortes" int8 NOT NULL,
+	"ancho_corte" float8 NOT NULL,
 	PRIMARY KEY ("id_cortes_segmentos")
 ) WITH (OIDS = FALSE);
 
