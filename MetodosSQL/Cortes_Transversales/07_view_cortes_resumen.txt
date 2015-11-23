@@ -50,7 +50,7 @@ CREATE VIEW "cortes_transversales"."v_cortes_resumen_para_geoalert" AS (
 		t1.id_corte,
 		t1.nombre_corte,
 		t1.geom_conjunto_polyline,
-		t1.largo,
+		round(t1.largo::numeric,3) largo,
 		t1.nro_cortes,
 		round(t1.ancho_corte::numeric,3) ancho_corte,
 		t1.cantidad_puntos cantidad_puntos_squeesar,
