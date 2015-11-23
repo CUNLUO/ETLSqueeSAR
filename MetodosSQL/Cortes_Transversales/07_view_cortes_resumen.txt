@@ -8,6 +8,7 @@ CREATE VIEW cortes_transversales.v_cortes_resumen AS (
 -- Definir tipo de dato para manipularlo dentro de la plataforma
 		'corte_transversal' as tipo_dato,
 		t2.id_corte,
+		t2.nombre_corte,
 -- Calcular geom del corte como conjunto de lineas
 		st_transform(st_union (t2.geom_corte_polyline,t2.geom_linea_polyline),1000) geom_conjunto_polyline,
 -- Calcular geom del corte como un sólo poligono
@@ -26,6 +27,7 @@ CREATE VIEW cortes_transversales.v_cortes_resumen AS (
 		(
 			SELECT
 				t1.id_corte,
+				t1.nombre_corte,
 				t1.geom_linea,
 				st_collect (t1.geom_segmento_polyline) geom_corte_polyline,
 				st_collect (t1.geom_linea) geom_linea_polyline,
@@ -36,6 +38,7 @@ CREATE VIEW cortes_transversales.v_cortes_resumen AS (
 				"cortes_transversales"."v_cortes_segmentos" t1
 			GROUP BY
 				t1.id_corte,
+				t1.nombre_corte,
 				t1.geom_linea
 		) t2
 );
@@ -45,10 +48,11 @@ CREATE VIEW "cortes_transversales"."v_cortes_resumen_para_geoalert" AS (
 	SELECT
 		t1.tipo_dato,
 		t1.id_corte,
+		t1.nombre_corte,
 		t1.geom_conjunto_polyline,
 		t1.largo,
 		t1.nro_cortes,
-		t1.ancho_corte,
+		round(t1.ancho_corte::numeric,3) ancho_corte,
 		t1.cantidad_puntos cantidad_puntos_squeesar,
 -- Redondear valores numericos a 3 decimales para su visualizacion en la plataforma
 		round(t1.vel_mean::numeric,3) vel_mean,

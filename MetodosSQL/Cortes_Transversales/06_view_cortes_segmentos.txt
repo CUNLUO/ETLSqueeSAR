@@ -8,6 +8,7 @@ OR REPLACE VIEW "cortes_transversales"."v_cortes_segmentos" AS (
 	SELECT
 		t1.id_cortes_segmentos AS id_cortes_segmentos,
 		t1.id_corte,
+		t1.nombre_corte,
 -- Calcula el geom asociado al poligono que encierra al segmento correspondiente
 		st_setsrid (
 			st_makepolygon (
