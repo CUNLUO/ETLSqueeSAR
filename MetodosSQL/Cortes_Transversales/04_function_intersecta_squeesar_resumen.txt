@@ -1,6 +1,6 @@
 -- Eliminar funcion 'fn_intersecta_squeesar_resumen'
 DROP FUNCTION
-IF EXISTS cortes_transversales.fn_intersecta_squeesar_resumen (geom VARCHAR(4000));
+IF EXISTS cortes_transversales.fn_intersecta_squeesar_resumen (geom VARCHAR(4000)) CASCADE;
 
 
 -- Crea funcion 'fn_intersecta_squeesar_resumen'
@@ -17,12 +17,15 @@ CREATE FUNCTION cortes_transversales.fn_intersecta_squeesar_resumen (geom VARCHA
 -- Declara variables locales
 DECLARE
 	sQuery_Total$ VARCHAR (10000) ;
+	sQuery_Test$ VARCHAR (10000) ;
 	sNombre_Tabla$ VARCHAR (255) ;
+	iRegisros$ int8 ;
 
 
 BEGIN
 -- Inicializar variables
 	sQuery_Total$ := '' ; 
+	sQuery_Test$ := '' ; 
 	sNombre_Tabla$ := '' ;
 
 -- Determinar la tabla del squeesar vigente
@@ -33,28 +36,55 @@ BEGIN
 	WHERE
 		vigencia = 'S' ;
 
- -- Contruir query para obtener datos de la intersección del squeesar con el geom input
- sQuery_Total$ := 'SELECT st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000) AS geom_corte,
-											ST_union (t1.geom) AS geom_interseccion,
-											AVG (t1.vel) AS vel_mean,
-											AVG (t1.height) AS height_mean,
-											AVG (t1.acc) AS acc_mean,
-											AVG (t1.coherence) AS coherence_mean,
-											COUNT (t1.geom) AS cantidad_puntos
+ -- Realizar query para ver si devuelve datos
+ sQuery_Test$ := 'SELECT COUNT(*) 
 										FROM
 											"squeesar".' || sNombre_Tabla$ || ' AS t1
 										WHERE
 											ST_Intersects (	t1.geom, st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000))
 										AND ST_isvalid (t1.geom) = ''t''
-										AND ST_isvalid ( st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000)) = ''t''
-										AND t1.x >= st_xmin ( st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000))
-										AND t1.x <= st_xmax ( st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000))
-										AND t1.y >= st_ymin ( st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000))
-										AND t1.y <= st_ymax ( st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000))
-										GROUP BY
-											st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000)'  ;
+										AND ST_isvalid ( st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000)) = ''t''';
+	EXECUTE sQuery_Test$ INTO iRegisros$;
+									
+ -- Si devuelve al menos un registro devolver el resultado de la query
+ IF iRegisros$>0 
+ THEN
+	 -- Contruir query para obtener datos de la intersección del squeesar con el geom input
+	 sQuery_Total$ := 'SELECT st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000) AS geom_corte,
+												ST_union (t1.geom) AS geom_interseccion,
+												AVG (t1.vel) AS vel_mean,
+												AVG (t1.height) AS height_mean,
+												AVG (t1.acc) AS acc_mean,
+												AVG (t1.coherence) AS coherence_mean,
+												COUNT (t1.geom) AS cantidad_puntos
+											FROM
+												"squeesar".' || sNombre_Tabla$ || ' AS t1
+											WHERE
+												ST_Intersects (	t1.geom, st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000))
+											AND ST_isvalid (t1.geom) = ''t''
+											AND ST_isvalid ( st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000)) = ''t''
+											AND t1.x >= st_xmin ( st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000))
+											AND t1.x <= st_xmax ( st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000))
+											AND t1.y >= st_ymin ( st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000))
+											AND t1.y <= st_ymax ( st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000))
+											GROUP BY
+												st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000)'  ;
 
--- Ejecutar query
- RETURN QUERY EXECUTE sQuery_Total$ ;
+	-- Ejecutar query
+	 RETURN QUERY EXECUTE sQuery_Total$ ;
+
+ -- Si no devuelve registros entregar valores nulos por defecto
+ ELSE
+	 -- Contruir query para obtener datos nulos cuando no hay interseccion
+	 sQuery_Total$ := 'SELECT st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000) AS geom_corte,
+												st_transform(ST_GeomFromText(''' || $1 || ''',1000),1000) AS geom_interseccion,
+												-9999::float AS vel_mean,
+												-9999::float AS height_mean,
+												-9999::float AS acc_mean,
+												-9999::float AS coherence_mean,
+												0::bigint AS cantidad_puntos' ;
+	-- Ejecutar query
+	 RETURN QUERY EXECUTE sQuery_Total$ ;
+ END IF;
 	END ;
  $$ LANGUAGE plpgsql;
