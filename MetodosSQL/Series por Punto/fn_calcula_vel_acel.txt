@@ -5,7 +5,6 @@ IF EXISTS squeesar.fn_calcula_vel_acel (id_punto BIGINT) CASCADE;
 
 -- Crea funcion 'fn_calcula_vel_acel'
 CREATE FUNCTION squeesar.fn_calcula_vel_acel (id_punto BIGINT) RETURNS TABLE (
-	id_squeesar_consolidado BIGINT,
 	direccion VARCHAR (255),
 	fecha date,
 	deformacion FLOAT,
@@ -36,7 +35,6 @@ BEGIN
 									
 -- Contruir query para obtener datos de la intersección del squeesar con el geom input
 	sQuery_Total$ := 'SELECT
-						id_squeesar_consolidado ,
 						direccion,
 						fecha,
 						deformacion,
