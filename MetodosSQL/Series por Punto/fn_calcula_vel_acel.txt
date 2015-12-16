@@ -1,0 +1,57 @@
+-- Eliminar funcion 'fn_calcula_vel_acel'
+DROP FUNCTION
+IF EXISTS squeesar.fn_calcula_vel_acel (id_punto BIGINT) CASCADE;
+
+
+-- Crea funcion 'fn_calcula_vel_acel'
+CREATE FUNCTION squeesar.fn_calcula_vel_acel (id_punto BIGINT) RETURNS TABLE (
+	id_squeesar_consolidado BIGINT,
+	direccion VARCHAR (255),
+	fecha date,
+	deformacion FLOAT,
+	velocidad FLOAT,
+	aceleracion FLOAT
+) AS $$ 
+
+-- Declara variables locales
+DECLARE
+	sQuery_Total$ VARCHAR (10000) ;
+	sNombre_Tabla$ VARCHAR (255) ;
+
+
+
+BEGIN
+-- Inicializar variables
+	sQuery_Total$ := '' ; 
+	sNombre_Tabla$ := '' ;
+
+-- Determinar la tabla del squeesar vigente
+ SELECT DISTINCT
+		nombre_tabla_consolidada INTO sNombre_Tabla$
+	FROM
+		squeesar.registro_squeesar
+	WHERE
+		vigencia = 'S' ;
+
+									
+-- Contruir query para obtener datos de la intersección del squeesar con el geom input
+	sQuery_Total$ := 'SELECT
+						id_squeesar_consolidado ,
+						direccion,
+						fecha,
+						deformacion,
+						COALESCE(((deformacion - lag(deformacion) over (partition by id_squeesar_consolidado order by fecha) ) / ((fecha - lag(fecha)over(partition by id_squeesar_consolidado order by fecha))*24)),-9999) as velocidad,
+						COALESCE((((deformacion - lag(deformacion) over (partition by id_squeesar_consolidado order by fecha) ) / ((fecha - lag(fecha)over(partition by id_squeesar_consolidado order by fecha))*24)) -
+						((lag(deformacion,1)over (partition by id_squeesar_consolidado order by fecha) - lag(deformacion,2) over (partition by id_squeesar_consolidado order by fecha) ) / ((lag(fecha,1)over (partition by id_squeesar_consolidado order by fecha) - lag(fecha,2)over(partition by id_squeesar_consolidado order by fecha))*24)) 
+						) /
+						((fecha - lag(fecha)over(partition by id_squeesar_consolidado order by fecha))*24),-9999) as aceleracion
+					FROM 
+						"squeesar".' || sNombre_Tabla$ || '_fecha 
+					WHERE
+						id_squeesar_consolidado = ' || $1 || '' ;
+
+-- Ejecutar query
+	 RETURN QUERY EXECUTE sQuery_Total$ ;
+	 
+END ;
+ $$ LANGUAGE plpgsql;
