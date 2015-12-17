@@ -5,11 +5,22 @@ IF EXISTS squeesar.fn_calcula_vel_acel (id_punto BIGINT) CASCADE;
 
 -- Crea funcion 'fn_calcula_vel_acel'
 CREATE FUNCTION squeesar.fn_calcula_vel_acel (id_punto BIGINT) RETURNS TABLE (
-	direccion VARCHAR (255),
 	fecha date,
 	deformacion FLOAT,
 	velocidad FLOAT,
-	aceleracion FLOAT
+	aceleracion FLOAT,
+	direccion	varchar,
+	height	float8,
+	h_stdev	float8,
+	vel	float8,
+	v_stdev	float8,
+	acc	float8,
+	coherence	float8,
+	a_stdev	float8,
+	eff_area	int4,
+	x	float8,
+	y	float8
+
 ) AS $$ 
 
 -- Declara variables locales
@@ -35,18 +46,34 @@ BEGIN
 									
 -- Contruir query para obtener datos de la intersección del squeesar con el geom input
 	sQuery_Total$ := 'SELECT
-						direccion,
-						fecha,
-						deformacion,
-						COALESCE(((deformacion - lag(deformacion) over (partition by id_squeesar_consolidado order by fecha) ) / ((fecha - lag(fecha)over(partition by id_squeesar_consolidado order by fecha))*24)),-9999) as velocidad,
-						COALESCE((((deformacion - lag(deformacion) over (partition by id_squeesar_consolidado order by fecha) ) / ((fecha - lag(fecha)over(partition by id_squeesar_consolidado order by fecha))*24)) -
-						((lag(deformacion,1)over (partition by id_squeesar_consolidado order by fecha) - lag(deformacion,2) over (partition by id_squeesar_consolidado order by fecha) ) / ((lag(fecha,1)over (partition by id_squeesar_consolidado order by fecha) - lag(fecha,2)over(partition by id_squeesar_consolidado order by fecha))*24)) 
-						) /
-						((fecha - lag(fecha)over(partition by id_squeesar_consolidado order by fecha))*24),-9999) as aceleracion
-					FROM 
-						"squeesar".' || sNombre_Tabla$ || '_fecha 
-					WHERE
-						id_squeesar_consolidado = ' || $1 || '' ;
+											h_sq_f.fecha,
+											h_sq_f.deformacion,
+											COALESCE(((h_sq_f.deformacion - lag(h_sq_f.deformacion) over (partition by h_sq_f.id_squeesar_consolidado order by h_sq_f.fecha) ) / ((h_sq_f.fecha - lag(h_sq_f.fecha)over(partition by h_sq_f.id_squeesar_consolidado order by h_sq_f.fecha))))*365,-9999) as velocidad,
+											COALESCE((((h_sq_f.deformacion - lag(h_sq_f.deformacion) over (partition by h_sq_f.id_squeesar_consolidado order by h_sq_f.fecha) ) / ((h_sq_f.fecha - lag(h_sq_f.fecha)over(partition by h_sq_f.id_squeesar_consolidado order by h_sq_f.fecha)))) -
+											((lag(h_sq_f.deformacion,1)over (partition by h_sq_f.id_squeesar_consolidado order by h_sq_f.fecha) - lag(h_sq_f.deformacion,2) over (partition by h_sq_f.id_squeesar_consolidado order by h_sq_f.fecha) ) / ((lag(h_sq_f.fecha,1)over (partition by h_sq_f.id_squeesar_consolidado order by h_sq_f.fecha) - lag(h_sq_f.fecha,2)over(partition by h_sq_f.id_squeesar_consolidado order by h_sq_f.fecha)))) 
+											) /
+											((h_sq_f.fecha - lag(h_sq_f.fecha)over(partition by h_sq_f.id_squeesar_consolidado order by h_sq_f.fecha)))*365*365,-9999) as aceleracion,
+											h_sq.direccion,
+											h_sq.height,
+											h_sq.h_stdev,
+											h_sq.vel,
+											h_sq.v_stdev,
+											h_sq.acc,
+											h_sq.coherence,
+											h_sq.a_stdev,
+											h_sq.eff_area,
+											h_sq.x,
+											h_sq.y
+										FROM 
+											"squeesar".' || sNombre_Tabla$ || '_fecha h_sq_f
+										INNER JOIN 
+											"squeesar".' || sNombre_Tabla$ || ' h_sq
+										ON
+											(h_sq_f.id_squeesar_consolidado = h_sq.id_squeesar_consolidado)
+										WHERE  
+											h_sq.id_squeesar_consolidado = ' || $1 || '' ;
+
+
 
 -- Ejecutar query
 	 RETURN QUERY EXECUTE sQuery_Total$ ;
