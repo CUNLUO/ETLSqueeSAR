@@ -1,0 +1,61 @@
+-- Drop Index if exists
+DROP INDEX
+IF EXISTS id_squeesar_consolidado_sample10_idx,
+ id_squeesar_consolidado_sample20_idx,
+ id_squeesar_consolidado_sample50_idx;
+
+-- Drop tables if exists
+DROP TABLE
+IF EXISTS squeesar.sample10_squeesar_vigente,
+ squeesar.sample20_squeesar_vigente,
+ squeesar.sample50_squeesar_vigente;
+
+-- Create tables
+-- Sample with ~10%
+CREATE TABLE squeesar.sample10_squeesar_vigente AS (
+	SELECT
+		*
+	FROM
+		fn_select_ultimo_squeesar ()
+	WHERE
+		random() < 0.1
+);
+
+ALTER TABLE "squeesar"."sample10_squeesar_vigente" ALTER COLUMN "id_squeesar_consolidado"
+SET NOT NULL,
+ ADD PRIMARY KEY ("id_squeesar_consolidado");
+
+-- Sample with ~20%
+CREATE TABLE squeesar.sample20_squeesar_vigente AS (
+	SELECT
+		*
+	FROM
+		fn_select_ultimo_squeesar ()
+	WHERE
+		random() < 0.2
+);
+
+ALTER TABLE "squeesar"."sample20_squeesar_vigente" ALTER COLUMN "id_squeesar_consolidado"
+SET NOT NULL,
+ ADD PRIMARY KEY ("id_squeesar_consolidado");
+
+-- Sample with ~50%
+CREATE TABLE squeesar.sample50_squeesar_vigente AS (
+	SELECT
+		*
+	FROM
+		fn_select_ultimo_squeesar ()
+	WHERE
+		random() < 0.5
+);
+
+ALTER TABLE "squeesar"."sample50_squeesar_vigente" ALTER COLUMN "id_squeesar_consolidado"
+SET NOT NULL,
+ ADD PRIMARY KEY ("id_squeesar_consolidado");
+
+-- Create index
+CREATE UNIQUE INDEX id_squeesar_consolidado_sample10_idx ON "squeesar"."sample10_squeesar_vigente" (id_squeesar_consolidado);
+
+CREATE UNIQUE INDEX id_squeesar_consolidado_sample20_idx ON "squeesar"."sample20_squeesar_vigente" (id_squeesar_consolidado);
+
+CREATE UNIQUE INDEX id_squeesar_consolidado_sample50_idx ON "squeesar"."sample50_squeesar_vigente" (id_squeesar_consolidado);

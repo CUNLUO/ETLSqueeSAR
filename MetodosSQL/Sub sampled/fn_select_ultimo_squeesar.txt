@@ -1,0 +1,76 @@
+-- Eliminar funcion 'fn_select_ultimo_squeesar'
+DROP FUNCTION
+IF EXISTS squeesar.fn_select_ultimo_squeesar () CASCADE;
+
+
+-- Crea funcion 'fn_select_ultimo_squeesar'
+CREATE FUNCTION squeesar.fn_select_ultimo_squeesar () RETURNS TABLE (
+id_squeesar_consolidado	int8,
+direccion	varchar,
+gid	int8,
+nombre_tabla	varchar,
+code	varchar,
+height	float8,
+h_stdev	float8,
+vel	float8,
+v_stdev	float8,
+acc	float8,
+coherence	float8,
+a_stdev	float8,
+eff_area	int4,
+range	int4,
+azimuth	int4,
+x	float8,
+y	float8,
+geom	geometry
+) AS $$ 
+
+-- Declara variables locales
+DECLARE
+	sQuery_Total$ VARCHAR (10000) ;
+	sNombre_Tabla$ VARCHAR (255) ;
+
+
+
+BEGIN
+-- Inicializar variables
+	sQuery_Total$ := '' ; 
+	sNombre_Tabla$ := '' ;
+
+-- Determinar la tabla del squeesar vigente
+ SELECT DISTINCT
+		nombre_tabla_consolidada INTO sNombre_Tabla$
+	FROM
+		squeesar.registro_squeesar
+	WHERE
+		vigencia = 'S' ;
+
+									
+-- Contruir query para obtener datos de la intersección del squeesar con el geom input
+	sQuery_Total$ := 'SELECT
+											id_squeesar_consolidado,
+											direccion,
+											gid,
+											nombre_tabla,
+											code,
+											height,
+											h_stdev,
+											vel,
+											v_stdev,
+											acc,
+											coherence,
+											a_stdev,
+											eff_area,
+											range,
+											azimuth,
+											x,
+											y,
+											geom
+										FROM 
+											"squeesar".' || sNombre_Tabla$ || ' ' ;
+
+-- Ejecutar query
+	 RETURN QUERY EXECUTE sQuery_Total$ ;
+	 
+END ;
+ $$ LANGUAGE plpgsql;
