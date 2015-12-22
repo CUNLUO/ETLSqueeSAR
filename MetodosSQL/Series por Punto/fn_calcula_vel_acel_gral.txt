@@ -1,0 +1,77 @@
+-- Eliminar funcion 'fn_calcula_vel_acel_gral'
+DROP FUNCTION
+IF EXISTS squeesar.fn_calcula_vel_acel_gral (esquema varchar,tabla varchar,campo_filtro varchar,campo_fecha varchar, campo_distancia varchar, id_filtro BIGINT, ponderacion FLOAT, valor_if_null FLOAT);
+
+
+-- Crea funcion 'fn_calcula_vel_acel_gral'
+CREATE FUNCTION squeesar.fn_calcula_vel_acel_gral (esquema varchar,tabla varchar,campo_filtro varchar,campo_tiempo varchar, campo_distancia varchar, id_filtro BIGINT, ponderacion FLOAT, valor_if_null FLOAT DEFAULT NULL) RETURNS TABLE (
+	campo_fecha DATE,
+	campo_dist_acumulada FLOAT,
+	campo_velocidad FLOAT,
+	campo_aceleracion FLOAT,
+	campo_vel_inversa FLOAT
+) AS $$ 
+
+-- Declara variables locales
+DECLARE
+	sQuery_Total$ VARCHAR (10000) ;
+	sQuery_Vel$ VARCHAR (10000) ;
+	sQuery_Vel_1$ VARCHAR (10000) ;
+	sQuery_Ace$ VARCHAR (10000) ;
+	sQuery_Inv$ VARCHAR (10000) ;
+	fValorIfNull$ FLOAT;
+
+
+
+BEGIN
+-- Inicializar variables
+	sQuery_Total$ := '' ; 
+	fValorIfNull$ := $8;
+	
+
+-- Formula para el calculo de la velocidad
+	sQuery_Vel$ := '((table1.' || $5 || ' - lag(table1.' || $5 || ') over (partition by table1.' || $3 || ' order by table1.' || $4 || ') ) / ((table1.' || $4 || ' - lag(table1.' || $4 || ')over(partition by table1.' || $3 || ' order by table1.' || $4 || '))))';
+
+-- Formula para el calculo de la velocidad en el instante anterior
+	sQuery_Vel_1$ := '((lag(table1.' || $5 || ',1)over (partition by table1.' || $3 || ' order by table1.' || $4 || ') - lag(table1.' || $5 || ',2) over (partition by table1.' || $3 || ' order by table1.' || $4 || ') ) / ((lag(table1.' || $4 || ',1)over (partition by table1.' || $3 || ' order by table1.' || $4 || ') - lag(table1.' || $4 || ',2)over(partition by table1.' || $3 || ' order by table1.' || $4 || ')))) ';
+	
+-- Formula para el calculo de la aceleracion
+	sQuery_Ace$ := '(' || sQuery_Vel$ || ' - ' || sQuery_Vel_1$ || ') /(table1.' || $4 || ' - lag(table1.' || $4 || ')over(partition by table1.' || $3 || ' order by table1.' || $4 || '))';
+	
+-- Formula para el calculo de la velocidad inversa
+	sQuery_Inv$ := '1/' || sQuery_Vel$ || ' ' ;
+	
+	
+-- Actualizar segun ponderacion dada como input
+	sQuery_Vel$ := '(' || sQuery_Vel$ || ')*' || $7 || '';
+	sQuery_Ace$ := '(' || sQuery_Ace$ || ')*' || $7 || '*' || $7 || '';
+	sQuery_Inv$ := '(' || sQuery_Inv$ || ')/' || $7 || '';
+	
+	
+-- Actualizar querys si valor_if_null no es NULL
+	IF (fValorIfNull$ IS NOT NULL) THEN
+		sQuery_Vel$ := 'COALESCE(' || sQuery_Vel$ || ',' || fValorIfNull$ || ')';
+		sQuery_Ace$ := 'COALESCE(' || sQuery_Ace$ || ',' || fValorIfNull$ || ')';
+		sQuery_Inv$ := 'COALESCE(' || sQuery_Inv$ || ',' || fValorIfNull$ || ')';
+	END IF;
+
+
+-- Contruir query para obtener datos de la intersección del squeesar con el geom input
+	sQuery_Total$ := 'SELECT
+											table1.' || $4 || ' as campo_fecha,
+											table1.' || $5 || ' as campo_dist_acumulada,
+											' || sQuery_Vel$ || ' as campo_velocidad,
+											' || sQuery_Ace$ || ' as campo_aceleracion,
+											' || sQuery_Inv$ || ' as campo_vel_inversa
+										FROM 
+											' || $1 || '.' || $2 || ' as table1
+										WHERE  
+											table1.' || $3 || ' = ' || $6 || '' ;
+
+
+
+-- Ejecutar query
+	 RETURN QUERY EXECUTE sQuery_Total$ ;
+	 
+END ;
+ $$ LANGUAGE plpgsql;
