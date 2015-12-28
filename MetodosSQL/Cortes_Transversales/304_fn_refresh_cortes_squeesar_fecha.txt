@@ -1,0 +1,94 @@
+-- Eliminar funcion si existe
+DROP FUNCTION
+IF EXISTS cortes_transversales.fn_refresh_cortes_squeesar_fecha ( id_corte int8, accion varchar);
+
+-- Crear o reemplazar funcion 'fn_refresh_cortes_squeesar_fecha'
+CREATE
+OR REPLACE FUNCTION cortes_transversales.fn_refresh_cortes_squeesar_fecha ( id_corte int8, accion varchar) RETURNS VOID AS $$ 
+
+
+-- Declarar variables
+DECLARE
+	sQuery_Total$ VARCHAR (20000) ;
+	sQuery_Valores$ VARCHAR (20000) ;
+	sQuery_corte$ VARCHAR (20000) ;
+
+
+BEGIN
+-- Inicializar variables
+	sQuery_Total$ := '' ; 
+	sQuery_Valores$ := '';
+	sQuery_corte$ := '' ;
+
+-- Definir sQuery_corte$
+IF ($1 = 0) THEN
+	-- Vaciar la tabla para calcularala entera
+	EXECUTE 'TRUNCATE cortes_transversales.cortes_squeesar_fecha';
+	sQuery_corte$ := 'cortes_transversales.cortes_segmentos';
+ELSE
+	-- Borrar corte en caso que ya esté
+	EXECUTE 'DELETE FROM cortes_transversales.cortes_squeesar_fecha WHERE id_corte =' || $1 || '';
+	-- Componer query para solo actualizar el corte insertado
+	sQuery_corte$ := '(SELECT * FROM cortes_transversales.cortes_segmentos aux WHERE aux.id_corte =' || $1 || ')';
+END IF;
+
+
+-- Definir procedimiento en caso de accion 'crear'
+IF ($2 = 'crear') THEN
+	-- Crear querys
+	sQuery_Valores$ := 'SELECT
+												t1.id_cortes_segmentos,
+												t1.id_corte,
+												t2.geom_segmento,
+												t2.distancia,
+												(cortes_transversales.fn_intersecta_squeesar_fecha (t1.x_0, t1.y_0, t1.x_1, t1.y_1, t1.x_2, t1.y_2, t1.x_3, t1.y_3, t1.x_0, t1.y_0 )).*
+											FROM '|| sQuery_corte$ || ' t1
+											RIGHT JOIN (
+													SELECT
+														a1.id_cortes_segmentos,
+														a1.id_corte,
+														a1.geom_segmento,
+														st_distance ((a1.geom_centroide :: geography), (a2.geom_inicio :: geography)) AS distancia
+													FROM
+														cortes_transversales.v_cortes_segmentos a1
+													INNER JOIN
+														(
+											-- Tabla con el geom de inicio de cada corte
+														SELECT DISTINCT
+														 ON (t4.id_corte) t4.id_corte,
+															st_setsrid (
+																st_centroid (
+																	st_geomfromtext (
+																		((((((((''LINESTRING('' :: TEXT || t4.x_0) || '' '' :: TEXT) || t4.y_0) || '','' :: TEXT) || t4.x_1) || '' '' :: TEXT) || t4.y_1) || '')'' :: TEXT
+																		),4326
+																	)
+																),4326
+															) AS geom_inicio
+														FROM '|| sQuery_corte$ || '  t4
+														ORDER BY
+															t4.id_corte,
+															t4.id_cortes_segmentos
+													) a2
+													ON 
+														(a1.id_corte = a2.id_corte)
+													ORDER BY
+														a1.id_cortes_segmentos
+												) t2
+											ON 
+												(t1.id_cortes_segmentos = t2.id_cortes_segmentos)
+											WHERE
+												t1.id_corte IS NOT NULL
+											ORDER BY
+												t1.id_corte,
+												fecha,
+												t2.distancia';
+
+	sQuery_Total$ := 'INSERT INTO cortes_transversales.cortes_squeesar_fecha (id_cortes_segmentos,id_corte,geom_segmento,distancia,new_geom,def_mean,n,fecha) ' || sQuery_Valores$ || ';';
+	EXECUTE sQuery_Total$;
+ELSEIF ($2 = 'borrar') THEN
+	EXECUTE 'DELETE FROM cortes_transversales.cortes_segmentos WHERE id_corte = ' || $1 || '';
+END IF;
+
+END ; 
+
+$$ LANGUAGE plpgsql

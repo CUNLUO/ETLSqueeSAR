@@ -1,10 +1,10 @@
 -- Eliminar funcion 'fn_intersecta_squeesar_resumen'
 DROP FUNCTION
-IF EXISTS cortes_transversales.fn_intersecta_squeesar_resumen (geom VARCHAR(4000)) CASCADE;
+IF EXISTS cortes_transversales.fn_intersecta_squeesar_resumen (geom VARCHAR(10000)) CASCADE;
 
 
 -- Crea funcion 'fn_intersecta_squeesar_resumen'
-CREATE FUNCTION cortes_transversales.fn_intersecta_squeesar_resumen (geom VARCHAR(4000)) RETURNS TABLE (
+CREATE FUNCTION cortes_transversales.fn_intersecta_squeesar_resumen (geom VARCHAR(10000)) RETURNS TABLE (
 	geom_corte geometry,
 	geom_interseccion geometry,
 	vel_mean FLOAT,
@@ -16,8 +16,8 @@ CREATE FUNCTION cortes_transversales.fn_intersecta_squeesar_resumen (geom VARCHA
 
 -- Declara variables locales
 DECLARE
-	sQuery_Total$ VARCHAR (10000) ;
-	sQuery_Test$ VARCHAR (10000) ;
+	sQuery_Total$ VARCHAR (20000) ;
+	sQuery_Test$ VARCHAR (20000) ;
 	sNombre_Tabla$ VARCHAR (255) ;
 	iRegisros$ int8 ;
 

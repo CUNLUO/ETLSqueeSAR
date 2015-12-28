@@ -1,0 +1,32 @@
+-- Eliminar tabla de registros
+DROP TABLE
+IF EXISTS cortes_transversales.registro_refresh_cortes_squeesar_fecha;
+
+-- Eliminar secuencia
+DROP SEQUENCE
+IF EXISTS cortes_transversales.id_registro_refresh_cortes_squeesar_fecha_seq;
+
+-- Crear secuencia
+CREATE SEQUENCE cortes_transversales.id_registro_refresh_cortes_squeesar_fecha_seq;
+
+-- Crear tabla de registro para automatizar los refresh de la vista materializada
+CREATE TABLE cortes_transversales.registro_refresh_cortes_squeesar_fecha (
+	"id_registro_refresh_cortes_squeesar_fecha" int8 DEFAULT nextval(
+		'cortes_transversales.id_registro_refresh_cortes_squeesar_fecha_seq' :: regclass
+	) NOT NULL,
+	"fechahora_modificacion" TIMESTAMP NOT NULL,
+	"id_corte" int8,
+	"accion" VARCHAR(20),
+	"requiere_refresh" BOOLEAN NOT NULL,
+	"fechahora_proceso" TIMESTAMP,
+	"tiempo_ejecucion" INTERVAL,
+	PRIMARY KEY (
+		"id_registro_refresh_cortes_squeesar_fecha"
+	)
+) WITH (OIDS = FALSE);
+
+ALTER TABLE cortes_transversales.registro_refresh_cortes_squeesar_fecha OWNER TO "postgres";
+
+-- Setear el campo  'fechahora_modificacion' con now() para cada nuevo insert en la tabla
+ALTER TABLE cortes_transversales.registro_refresh_cortes_squeesar_fecha ALTER fechahora_modificacion
+SET DEFAULT now();

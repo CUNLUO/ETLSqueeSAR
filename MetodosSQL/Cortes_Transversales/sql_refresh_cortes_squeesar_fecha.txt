@@ -1,0 +1,10 @@
+INSERT INTO "cortes_transversales"."registro_refresh_cortes_squeesar_fecha" (
+	requiere_refresh,
+	id_corte,
+	accion
+)
+VALUES
+	('t', 19,'borrar');
+
+-- para calcular todo desde 0 usar:
+-- 	('t', 0,'crear');

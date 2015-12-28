@@ -1,0 +1,39 @@
+-- Drop trigger si existe
+DROP TRIGGER
+IF EXISTS tg_registro_refresh_cortes_squeesar_fecha ON "cortes_transversales"."registro_refresh_cortes_squeesar_fecha";
+
+-- Drop function TRIGGER
+DROP FUNCTION
+IF EXISTS cortes_transversales.fn_tg_refresh_registro_cortes ();
+
+-- Crear la funcion del triger para actualizar la tabla "registro_refresh_mat_view"
+CREATE
+OR REPLACE FUNCTION cortes_transversales.fn_tg_refresh_registro_cortes () RETURNS TRIGGER AS $$ 
+
+	DECLARE
+		--tabla RECORD ;
+		tiempo_ini TIMESTAMP ;
+
+	BEGIN
+		-- Si el ultimo registro requiere actualizar entonces se actualiza la vista materializada
+		IF (NEW.requiere_refresh = 't') THEN
+			tiempo_ini = clock_timestamp() ;
+			PERFORM
+				cortes_transversales.fn_refresh_cortes_squeesar_fecha (NEW.id_corte::BIGINT,NEW.accion) ; 
+			UPDATE 
+				"cortes_transversales"."registro_refresh_cortes_squeesar_fecha"
+			SET requiere_refresh = 'f',
+				fechahora_proceso = tiempo_ini,
+				tiempo_ejecucion = clock_timestamp() - tiempo_ini
+			WHERE
+				id_registro_refresh_cortes_squeesar_fecha = NEW.id_registro_refresh_cortes_squeesar_fecha ;
+		END IF ;		
+		RETURN NULL ;
+	END ; 
+
+$$ LANGUAGE plpgsql
+;
+
+-- Crear el trigger
+CREATE TRIGGER tg_registro_refresh_cortes_squeesar_fecha 
+AFTER INSERT ON "cortes_transversales"."registro_refresh_cortes_squeesar_fecha" FOR EACH ROW EXECUTE PROCEDURE fn_tg_refresh_registro_cortes ();

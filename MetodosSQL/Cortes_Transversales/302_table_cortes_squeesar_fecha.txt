@@ -1,0 +1,28 @@
+-- Eliminar tabla y todas las dependencias
+DROP TABLE
+IF EXISTS cortes_transversales.cortes_squeesar_fecha;
+
+-- Eliminar la secuencia para iniciar desde 0
+DROP SEQUENCE
+IF EXISTS cortes_transversales.id_cortes_squeesar_fecha_seq;
+
+-- Crear la secuencia del id de la tabla
+CREATE SEQUENCE cortes_transversales.id_cortes_squeesar_fecha_seq;
+
+-- Cear tabla con los datos de la interseccion squeesar-corte
+CREATE TABLE cortes_transversales.cortes_squeesar_fecha (
+	id_cortes_squeesar_fecha int8 DEFAULT nextval(
+		'cortes_transversales.id_cortes_squeesar_fecha_seq' :: regclass
+	) NOT NULL,
+	id_cortes_segmentos int8,
+	id_corte int8,
+	geom_segmento geometry,
+	distancia float8,
+	new_geom geometry,
+	def_mean FLOAT,
+	n BIGINT,
+	fecha DATE,
+	PRIMARY KEY (id_cortes_squeesar_fecha)
+) WITH (OIDS = FALSE);
+
+ALTER TABLE cortes_transversales.cortes_squeesar_fecha OWNER TO "postgres";
