@@ -23,9 +23,9 @@ CREATE VIEW cortes_transversales.v_cortes_resumen AS (
 -- Calcula el ancho del corte
 		t2.ancho_corte,
 -- Calcular largo de cada segmento
-		(st_distance ((st_startpoint(t2.geom_linea) :: geography), (st_endpoint(t2.geom_linea) :: geography)))/t2.nro_cortes largo_segmento--,
+		(st_distance ((st_startpoint(t2.geom_linea) :: geography), (st_endpoint(t2.geom_linea) :: geography)))/t2.nro_cortes largo_segmento,
 -- Calcular variables agregadas de la interseccion del poligono asociado al corte con el esqueesar
-		--(fn_intersecta_squeesar_resumen(st_astext(st_transform(t2.geom_corte_poligono,1000)))).*
+		(fn_intersecta_squeesar_resumen(st_astext(st_transform(t2.geom_corte_poligono,1000)))).cantidad_puntos
 	FROM
 		(
 			SELECT
@@ -55,8 +55,8 @@ CREATE VIEW "cortes_transversales"."v_cortes_resumen_para_geoalert" AS (
 		t1.geom_conjunto_polyline,
 		round(t1.largo::numeric,3) largo,
 		t1.nro_cortes,
-		round(t1.ancho_corte::numeric,3) ancho_corte--,
-		--t1.cantidad_puntos cantidad_puntos_squeesar,
+		round(t1.ancho_corte::numeric,3) ancho_corte,
+		t1.cantidad_puntos cantidad_puntos_squeesar--,
 -- Redondear valores numericos a 3 decimales para su visualizacion en la plataforma
 		--round(t1.vel_mean::numeric,3) vel_mean,
 		--round(t1.acc_mean::numeric,3) acc_mean,
