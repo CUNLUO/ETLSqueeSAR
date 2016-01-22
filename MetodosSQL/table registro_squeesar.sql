@@ -11,6 +11,7 @@
   parte character varying(20),
   correlativo_parte	integer,
   vigencia	character varying(1),
+  cantidad_registros,
   CONSTRAINT registro_squeesar_pkey PRIMARY KEY (id_registro_squeesar),
   CONSTRAINT correlativo_tabla_unique UNIQUE (nombre_tabla,correlativo_parte)
   

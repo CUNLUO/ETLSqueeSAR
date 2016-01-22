@@ -5,6 +5,8 @@
   gid bigint not null,
   fecha	date not null,
   deformacion double precision,
+  vel double precision,
+  acc double precision,
   CONSTRAINT template_squeesar_consolidado_fecha_pkey PRIMARY KEY (id_squeesar_consolidado,fecha)
 )
 WITH (

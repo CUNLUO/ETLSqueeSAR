@@ -1,25 +1,25 @@
-﻿-- Function: squeesar.intersecta_squeesar_poligonos()
+﻿-- F|unction: poligonos.intersecta_poligono_squeesar
+-- DROP FUNCTION poligonos.intersecta_poligono_squeesar();
 
--- DROP FUNCTION squeesar.intersecta_squeesar_poligonos();
+CREATE OR REPLACE FUNCTION poligonos.intersecta_poligono_squeesar(integer)
+ RETURNS integer AS
+	$BODY$
 
-CREATE OR REPLACE FUNCTION squeesar.intersecta_squeesar_poligonos()
-  RETURNS integer AS
-$BODY$
-
-DECLARE
-
-	/*--------------------------------- */
-	cur_Interseccion	RECORD;
-	cur_fecha		RECORD;
-	cur_valores		RECORD;
+DECLARE 
+	nIdPoligono$	ALIAS FOR $1;	
 	sQuery$			varchar(2000);
 	sNombreTabla$	varchar(255);
-
+	
+	
+	/* Variables LOCALES */
+	/*variables lectura Cursor cur_Interseccion*/
+	cur_Interseccion 		RECORD;	
+	sResult$		varchar(200);
 	
 BEGIN
 	sQuery$ := '';
 	sNombreTabla$ := '';
-		
+	
 	SELECT DISTINCT
 		nombre_tabla_consolidada
 	INTO
@@ -27,9 +27,12 @@ BEGIN
 	FROM
 		squeesar.registro_squeesar
 	WHERE
-		vigencia  = 'S';	
-		
-	TRUNCATE poligonos.poligono_squeesar;
+		vigencia = 'S';
+			
+	DELETE FROM 
+		poligonos.poligono_squeesar
+	WHERE
+		id_poligono = nIdPoligono$;
 		
 	sQuery$ := 'SELECT DISTINCT
 					id_squeesar_consolidado as squeesar,
@@ -42,7 +45,8 @@ BEGIN
 					)
 				WHERE
 					ST_isvalid (squeesar.' || sNombreTabla$ || '.geom) = ''t''
-					AND ST_isvalid (poligonos.poligono.geom) = ''t''';
+					AND ST_isvalid (poligonos.poligono.geom) = ''t''
+					AND poligonos.poligono.id = ' || nIdPoligono$;
 					
 					--Raise notice 'sQuery$ %',sQuery$;
 					
@@ -63,12 +67,19 @@ BEGIN
 			);
 			
 	END LOOP;
-
-				
- RETURN 0;
+		
+	/*SELECT 
+		*
+	INTO
+		sResult$
+	FROM 
+		squeesar.agrupar_squeesar(nIdPoligono$);
+	*/
+	RETURN 0;
 END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-ALTER FUNCTION squeesar.intersecta_squeesar_poligonos()
+ALTER FUNCTION poligonos.intersecta_poligono_squeesar(integer)
   OWNER TO postgres;
+ 
